@@ -1,6 +1,6 @@
 use core::mem::MaybeUninit;
 
-use crate::{Cursor, Offset, UnionVectorOffset, builder::Builder, traits::*};
+use crate::{Offset, UnionVectorOffset, builder::Builder, traits::*};
 
 impl<T, P, const N: usize> WriteAsOffset<[P]> for [T; N]
 where
@@ -16,22 +16,27 @@ where
         //       https://github.com/rust-lang/rust/issues/80908
         let tmp =
             unsafe { (&tmp as *const [MaybeUninit<T::Value>; N] as *const [T::Value; N]).read() };
+        // The element data and the length prefix are written separately so that
+        // the alignment applies to the elements, which may need more than the
+        // 4 bytes of the prefix.
+        // SAFETY: The inner closure always initializes the entire buffer, because it calls `write_values` with `N` values each of length `T::STRIDE`.
         unsafe {
             builder.write_with(
-                4 + T::STRIDE.checked_mul(self.len()).unwrap(),
-                P::ALIGNMENT_MASK.max(3),
+                T::STRIDE.checked_mul(N).unwrap(),
+                P::ALIGNMENT_MASK.max(u32::ALIGNMENT_MASK),
                 |buffer_position, bytes| {
-                    let bytes = bytes.as_mut_ptr();
-
-                    (self.len() as u32).write(
-                        Cursor::new(&mut *(bytes as *mut [MaybeUninit<u8>; 4])),
-                        buffer_position,
-                    );
-
-                    T::write_values(&tmp, bytes.add(4), buffer_position - 4);
+                    T::write_values(&tmp, bytes.as_mut_ptr(), buffer_position);
                 },
-            )
-        };
+            );
+        }
+
+        // SAFETY: The inner closure always initializes the entire buffer, because it calls `copy_from_slice` with an array of len 4
+        unsafe {
+            builder.write_with(4, 0, |_buffer_position, bytes| {
+                let len = (N as u32).to_le_bytes().map(MaybeUninit::new);
+                bytes.copy_from_slice(&len);
+            });
+        }
         builder.current_offset()
     }
 }

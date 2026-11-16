@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a panic when building `Declarations` from zero schemas, and made the `check`, `dot`, and `rust` CLI subcommands reject invocations with no `.fbs` files. [#371](https://github.com/planus-org/planus/pull/371)
 - Give a clear error when rustfmt is not installed instead of a confusing broken-pipe write failure. [#374](https://github.com/planus-org/planus/pull/374)
 - Skip flatc-generated tests with a warning when local `flatc` doesn't match the pinned `flatbuffers` crate, instead of failing to build. Also bumped the pin to 25.12.19. [#375](https://github.com/planus-org/planus/pull/375)
+- Fixed vectors serialized from arrays (`[T; N]`) aligning the length prefix instead of the element data, which left elements aligned to more than 4 bytes (`u64`, `i64`, `f64` and structs containing them or using `force_align`) 4 bytes off their required alignment. The `flatbuffers` crate's verifier rejects such buffers as unaligned, and readers that load elements in place (e.g. C++) do misaligned reads. Slices and `Vec`s were not affected.
 
 ### Removed
 

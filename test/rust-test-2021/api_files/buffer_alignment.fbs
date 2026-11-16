@@ -1,0 +1,32 @@
+struct Struct64 {
+  value: uint64;
+}
+
+struct Struct16 (force_align: 16) {
+  value: uint8;
+}
+
+table Inner {
+  a: uint8;
+  value: uint64;
+}
+
+union Union {
+  Struct64,
+  Struct16,
+  Inner,
+  String: string,
+}
+
+table Root {
+  bytes: [uint8];
+  uint64s: [uint64];
+  float64s: [float64];
+  struct64s: [Struct64];
+  struct16s: [Struct16];
+  tables: [Inner];
+  union: Union;
+  unions: [Union];
+  struct16: Struct16;
+  value: uint64;
+}
