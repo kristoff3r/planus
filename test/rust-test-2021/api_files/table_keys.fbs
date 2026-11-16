@@ -1,0 +1,55 @@
+enum Color : uint8 { Red, Green, Blue }
+
+struct Point {
+  x: float32;
+  y: float64;
+}
+
+struct Cell {
+  index: uint16;
+  color: Color;
+}
+
+struct Segment {
+  start: Point;
+  cell: Cell;
+}
+
+table Leaf {
+  value: int32;
+}
+
+union Child {
+  Leaf,
+  Name: string,
+  Point,
+}
+
+table Node {
+  flag: bool = true;
+  count: uint32 = 7;
+  maybe_count: uint32 = null;
+  color: Color = Green;
+  maybe_color: Color = null;
+  weight: float32 = 1.5;
+  maybe_weight: float64 = null;
+  segment: Segment;
+  maybe_point: Point;
+  cell: Cell (required);
+  name: string;
+  default_name: string = "default";
+  required_name: string (required);
+  leaf: Leaf;
+  required_leaf: Leaf (required);
+  leaves: [Leaf];
+  numbers: [uint32];
+  default_numbers: [uint32] = [];
+  points: [Point];
+  names: [string];
+  child: Child;
+  required_child: Child (required);
+  children: [Child];
+  old: uint32 (deprecated);
+}
+
+table Empty {}

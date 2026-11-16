@@ -23,6 +23,7 @@ pub struct RustBackend {
     pub default_analysis: Vec<bool>,
     pub eq_analysis: Vec<bool>,
     pub infallible_analysis: Vec<bool>,
+    pub generate_keys: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -37,6 +38,7 @@ pub struct Table {
     pub builder_name: String,
     pub should_do_default: bool,
     pub should_do_eq: bool,
+    pub key_name: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -57,6 +59,8 @@ pub struct TableField {
     pub deserialize_default: Option<Cow<'static, str>>,
     pub try_from_code: String,
     pub is_copy: bool,
+    pub key_type: String,
+    pub key_create_code: String,
 }
 
 #[derive(Clone, Debug)]
@@ -66,6 +70,7 @@ pub struct Struct {
     pub should_do_default: bool,
     pub should_do_eq: bool,
     pub should_do_infallible_conversion: bool,
+    pub key_name: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -75,6 +80,9 @@ pub struct StructField {
     pub getter_return_type: String,
     pub getter_code: String,
     pub can_do_infallible_conversion: bool,
+    pub key_type: String,
+    pub to_key_code: String,
+    pub from_key_code: String,
 }
 
 #[derive(Clone, Debug)]
@@ -178,6 +186,134 @@ struct StructFieldType {
     getter_return_type: String,
     getter_code: String,
     can_do_infallible_conversion: bool,
+}
+
+/// How a field is represented in a generated key type.
+struct KeyField {
+    /// The type of the field in the key.
+    key_type: String,
+    /// The function converting a field value to its key, or `None` when the
+    /// key type is the value type.
+    to_key: Option<String>,
+    /// The function converting a key back to the field value, like `to_key`.
+    from_key: Option<String>,
+}
+
+impl KeyField {
+    fn identity(type_: String) -> Self {
+        Self {
+            key_type: type_,
+            to_key: None,
+            from_key: None,
+        }
+    }
+
+    fn convert(conversion: &Option<String>, value: &str) -> String {
+        match conversion {
+            Some(conversion) => format!("{conversion}({value})"),
+            None => value.to_string(),
+        }
+    }
+
+    fn convert_optional(conversion: &Option<String>, value: &str) -> String {
+        match conversion {
+            Some(conversion) => format!("{value}.map({conversion})"),
+            None => value.to_string(),
+        }
+    }
+}
+
+fn float_bits_type(type_: &FloatType) -> &'static str {
+    match type_ {
+        FloatType::F32 => "u32",
+        FloatType::F64 => "u64",
+    }
+}
+
+impl RustBackend {
+    /// The key representation of a type that is stored inline: a struct or a
+    /// scalar.
+    fn inline_key_field(&self, resolved_type: &ResolvedType<'_, Self>) -> KeyField {
+        match resolved_type {
+            ResolvedType::Struct(decl_id, _, info, relative_namespace) => {
+                let owned_type =
+                    format_relative_namespace(relative_namespace, &info.owned_name).to_string();
+                match &info.key_name {
+                    Some(key_name) if !self.eq_analysis[decl_id.0] => {
+                        let key_type =
+                            format_relative_namespace(relative_namespace, key_name).to_string();
+                        KeyField {
+                            to_key: Some(format!(
+                                "<{key_type} as ::core::convert::From<{owned_type}>>::from"
+                            )),
+                            from_key: Some(format!(
+                                "<{owned_type} as ::core::convert::From<{key_type}>>::from"
+                            )),
+                            key_type,
+                        }
+                    }
+                    // A struct that implements `Hash` and `Eq` is its own key.
+                    _ => KeyField::identity(owned_type),
+                }
+            }
+            ResolvedType::Enum(_, _, info, relative_namespace, _) => KeyField::identity(
+                format_relative_namespace(relative_namespace, &info.name).to_string(),
+            ),
+            ResolvedType::Bool => KeyField::identity("bool".to_string()),
+            ResolvedType::Integer(type_) => KeyField::identity(integer_type(type_).to_string()),
+            ResolvedType::Float(type_) => {
+                let float_type = float_type(type_);
+                KeyField {
+                    key_type: float_bits_type(type_).to_string(),
+                    to_key: Some(format!("{float_type}::to_bits")),
+                    from_key: Some(format!("{float_type}::from_bits")),
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    /// The key representation of a table field.
+    fn table_key_field(
+        &self,
+        resolved_type: &ResolvedType<'_, Self>,
+        field: &intermediate::TableField,
+    ) -> KeyField {
+        let key_field = match resolved_type {
+            ResolvedType::Table(_, _, info, relative_namespace) => KeyField::identity(format!(
+                "::planus::Offset<{}>",
+                format_relative_namespace(relative_namespace, &info.owned_name)
+            )),
+            ResolvedType::Union(_, _, info, relative_namespace) => KeyField::identity(format!(
+                "::planus::UnionOffset<{}>",
+                format_relative_namespace(relative_namespace, &info.owned_name)
+            )),
+            ResolvedType::Vector(type_) => match &**type_ {
+                ResolvedType::Union(_, _, info, relative_namespace) => KeyField::identity(format!(
+                    "::planus::UnionVectorOffset<{}>",
+                    format_relative_namespace(relative_namespace, &info.owned_name)
+                )),
+                _ => {
+                    KeyField::identity(format!("::planus::Offset<[{}]>", vector_offset_type(type_)))
+                }
+            },
+            ResolvedType::String => KeyField::identity("::planus::Offset<str>".to_string()),
+            ResolvedType::Array(..) => todo!(),
+            ResolvedType::Struct(..)
+            | ResolvedType::Enum(..)
+            | ResolvedType::Bool
+            | ResolvedType::Integer(_)
+            | ResolvedType::Float(_) => self.inline_key_field(resolved_type),
+        };
+        if matches!(field.assign_mode, AssignMode::Optional) {
+            KeyField {
+                key_type: format!("::core::option::Option<{}>", key_field.key_type),
+                ..key_field
+            }
+        } else {
+            key_field
+        }
+    }
 }
 
 impl RustBackend {
@@ -303,6 +439,9 @@ impl Backend for RustBackend {
             builder_name: reserve_type_name(&format!("{decl_name}Builder"), declaration_names),
             should_do_default: self.default_analysis[decl_id.0],
             should_do_eq: self.eq_analysis[decl_id.0],
+            key_name: self
+                .generate_keys
+                .then(|| reserve_type_name(&format!("{decl_name}Key"), declaration_names)),
         }
     }
 
@@ -321,6 +460,9 @@ impl Backend for RustBackend {
             should_do_default: self.default_analysis[decl_id.0],
             should_do_eq: self.eq_analysis[decl_id.0],
             should_do_infallible_conversion: self.infallible_analysis[decl_id.0],
+            key_name: self
+                .generate_keys
+                .then(|| reserve_type_name(&format!("{decl_name}Key"), declaration_names)),
         }
     }
 
@@ -408,6 +550,13 @@ impl Backend for RustBackend {
             )
         } else {
             format!("::core::convert::TryInto::try_into(value.{name}()?)?")
+        };
+
+        let key_field = self.table_key_field(&resolved_type, field);
+        let key_create_code = if matches!(field.assign_mode, AssignMode::Optional) {
+            KeyField::convert_optional(&key_field.from_key, &format!("self.{name}"))
+        } else {
+            KeyField::convert(&key_field.from_key, &format!("self.{name}"))
         };
 
         match resolved_type {
@@ -576,40 +725,6 @@ impl Backend for RustBackend {
                 }
             }
             ResolvedType::Vector(type_) => {
-                fn vector_offset_type<'a>(type_: &ResolvedType<'a, RustBackend>) -> Cow<'a, str> {
-                    match type_ {
-                        ResolvedType::Struct(_, _, info, relative_namespace) => {
-                            format_relative_namespace(relative_namespace, &info.owned_name)
-                                .to_string()
-                                .into()
-                        }
-                        ResolvedType::Table(_, _, info, relative_namespace) => format!(
-                            "::planus::Offset<{}>",
-                            format_relative_namespace(relative_namespace, &info.owned_name)
-                        )
-                        .into(),
-                        ResolvedType::Enum(_, _, info, relative_namespace, _) => {
-                            format_relative_namespace(relative_namespace, &info.name)
-                                .to_string()
-                                .into()
-                        }
-                        ResolvedType::Union(_, _, info, relative_namespace) => format!(
-                            "::planus::Offset<{}>",
-                            format_relative_namespace(relative_namespace, &info.owned_name)
-                        )
-                        .into(),
-                        ResolvedType::Vector(_) => {
-                            unreachable!("This should have been rejected in type-check")
-                        }
-                        ResolvedType::Array(_, _) => {
-                            unreachable!("This should have been rejected in type-check")
-                        }
-                        ResolvedType::String => "::planus::Offset<str>".into(),
-                        ResolvedType::Bool => "bool".into(),
-                        ResolvedType::Integer(type_) => integer_type(type_).into(),
-                        ResolvedType::Float(type_) => float_type(type_).into(),
-                    }
-                }
                 fn vector_owned_type<'a>(type_: &ResolvedType<'a, RustBackend>) -> Cow<'a, str> {
                     match type_ {
                         ResolvedType::Table(_, _, info, relative_namespace) => {
@@ -903,6 +1018,8 @@ impl Backend for RustBackend {
             deserialize_default,
             try_from_code,
             is_copy,
+            key_type: key_field.key_type,
+            key_create_code,
         }
     }
 
@@ -920,6 +1037,7 @@ impl Backend for RustBackend {
             "name",
             &mut translation_context.declaration_names,
         );
+        let key_field = self.inline_key_field(&resolved_type);
         let StructFieldType {
             owned_type,
             getter_return_type,
@@ -927,6 +1045,9 @@ impl Backend for RustBackend {
             can_do_infallible_conversion,
         } = self.struct_field_type(resolved_type, parent_info, &name);
         StructField {
+            to_key_code: KeyField::convert(&key_field.to_key, &format!("value.{name}")),
+            from_key_code: KeyField::convert(&key_field.from_key, &format!("value.{name}")),
+            key_type: key_field.key_type,
             name,
             owned_type,
             getter_return_type,
@@ -1031,6 +1152,41 @@ impl Backend for RustBackend {
             is_struct,
             can_do_infallible_conversion,
         }
+    }
+}
+
+fn vector_offset_type<'a>(type_: &ResolvedType<'a, RustBackend>) -> Cow<'a, str> {
+    match type_ {
+        ResolvedType::Struct(_, _, info, relative_namespace) => {
+            format_relative_namespace(relative_namespace, &info.owned_name)
+                .to_string()
+                .into()
+        }
+        ResolvedType::Table(_, _, info, relative_namespace) => format!(
+            "::planus::Offset<{}>",
+            format_relative_namespace(relative_namespace, &info.owned_name)
+        )
+        .into(),
+        ResolvedType::Enum(_, _, info, relative_namespace, _) => {
+            format_relative_namespace(relative_namespace, &info.name)
+                .to_string()
+                .into()
+        }
+        ResolvedType::Union(_, _, info, relative_namespace) => format!(
+            "::planus::Offset<{}>",
+            format_relative_namespace(relative_namespace, &info.owned_name)
+        )
+        .into(),
+        ResolvedType::Vector(_) => {
+            unreachable!("This should have been rejected in type-check")
+        }
+        ResolvedType::Array(_, _) => {
+            unreachable!("This should have been rejected in type-check")
+        }
+        ResolvedType::String => "::planus::Offset<str>".into(),
+        ResolvedType::Bool => "bool".into(),
+        ResolvedType::Integer(type_) => integer_type(type_).into(),
+        ResolvedType::Float(type_) => float_type(type_).into(),
     }
 }
 

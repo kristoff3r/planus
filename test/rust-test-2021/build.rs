@@ -30,9 +30,10 @@ fn main() -> Result<()> {
         probe_flatc(require_flatc)?
     };
 
-    // Create API tests
+    // Create API tests. These also cover the key types, which are generated
+    // only on request.
     let planus_api_dir = format!("{out_dir}/planus_api");
-    generate_test_code("api_files", &planus_api_dir, None, false)?;
+    generate_test_code("api_files", &planus_api_dir, None, false, true)?;
 
     // Create serialize/deserialize tests
     let planus_test_dir = format!("{out_dir}/planus_test");
@@ -43,12 +44,14 @@ fn main() -> Result<()> {
         &planus_test_dir,
         Some(&serialize_template),
         flatc_available,
+        false,
     )?;
 
     generate_test_code(
         "test_files_no_flatc",
         &planus_test_no_flatc_dir,
         Some(&serialize_template),
+        false,
         false,
     )?;
 
@@ -107,6 +110,7 @@ fn generate_test_code(
     out_dir: &str,
     template: Option<&str>,
     generate_flatc: bool,
+    generate_keys: bool,
 ) -> Result<()> {
     fs::create_dir_all(out_dir).wrap_err_with(|| eyre!("Cannot create dir: {}", out_dir))?;
 
@@ -128,7 +132,9 @@ fn generate_test_code(
             let Some(declarations) = planus_translation::translate_files(&[&file_path]) else {
                 bail!("Cannot translate code for {}", file_path.display());
             };
-            let code = planus_codegen::generate_rust(&declarations, true)
+            let mut options = planus_codegen::RustOptions::default();
+            options.generate_keys = generate_keys;
+            let code = planus_codegen::generate_rust_with_options(&declarations, &options)
                 .wrap_err_with(|| eyre!("Cannot codegen for {}", file_path.display()))?;
             std::fs::write(&generated_full_path, code)
                 .wrap_err_with(|| eyre!("Cannot write output to {}", generated_full_path))?;

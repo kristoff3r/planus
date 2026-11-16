@@ -40,7 +40,7 @@ impl<T: ?Sized> WriteAsOptional<Offset<T>> for Offset<T> {
     }
 }
 
-impl<T: ?Sized, D> WriteAsDefault<Offset<T>, D> for Offset<T> {
+impl<T: ?Sized, D: ?Sized> WriteAsDefault<Offset<T>, D> for Offset<T> {
     type Prepared = Self;
     #[inline]
     fn prepare(&self, _builder: &mut Builder, _default: &D) -> Option<Self> {

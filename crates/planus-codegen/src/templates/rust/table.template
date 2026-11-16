@@ -428,3 +428,60 @@ impl<'a> ::planus::ReadAsRoot<'a> for {{info.ref_name}}<'a> {
         ))
     }
 }
+
+{% match info.key_name %}
+{% when Some with (key_name) %}
+/// Every field of a [{{ info.owned_name }}] as a hashable value.
+///
+/// Equal keys write identical tables, so a map from keys to the offsets they
+/// were written at can share repeated tables within one buffer. Floats are
+/// stored as their bit patterns, structs as their keys, and strings, vectors,
+/// tables and unions as the offsets they were written at. Offsets only compare
+/// meaningfully within the buffer they were written to.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct {{ key_name }} {
+    {% for field in fields.declaration_order() -%}
+        /// Key of the [`{{field.name_and_docs.original_name}}` field]({{info.owned_name}}#structfield.{{field.info.name}}).
+        pub {{ field.info.name }}: {{ field.info.key_type }},
+    {%- endfor -%}
+}
+
+impl {{ key_name }} {
+    /// Writes the table described by this key.
+    #[inline]
+    pub fn create(&self, builder: &mut ::planus::Builder) -> ::planus::Offset<{{ info.owned_name }}> {
+        {{ info.owned_name }}::create(
+            builder,
+            {% for field in fields.declaration_order() %}
+                {{ field.info.key_create_code }},
+            {% endfor %}
+        )
+    }
+}
+
+impl ::planus::WriteAs<::planus::Offset<{{info.owned_name}}>> for {{ key_name }} {
+    type Prepared = ::planus::Offset<{{ info.owned_name }}>;
+
+    #[inline]
+    fn prepare(&self, builder: &mut ::planus::Builder) -> ::planus::Offset<{{info.owned_name}}> {
+        self.create(builder)
+    }
+}
+
+impl ::planus::WriteAsOptional<::planus::Offset<{{info.owned_name}}>> for {{ key_name }} {
+    type Prepared = ::planus::Offset<{{ info.owned_name }}>;
+
+    #[inline]
+    fn prepare(&self, builder: &mut ::planus::Builder) -> ::core::option::Option<::planus::Offset<{{info.owned_name}}>> {
+        ::core::option::Option::Some(self.create(builder))
+    }
+}
+
+impl ::planus::WriteAsOffset<{{info.owned_name}}> for {{ key_name }} {
+    #[inline]
+    fn prepare(&self, builder: &mut ::planus::Builder) -> ::planus::Offset<{{info.owned_name}}> {
+        self.create(builder)
+    }
+}
+{% when None %}
+{% endmatch %}

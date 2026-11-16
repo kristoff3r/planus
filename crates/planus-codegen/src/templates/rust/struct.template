@@ -267,3 +267,48 @@ unsafe impl ::planus::VectorWrite<{{ info.owned_name }}> for {{ info.owned_name 
         }
     }
 }
+
+{% match info.key_name %}
+{% when Some with (key_name) %}
+{% if info.should_do_eq %}
+/// Hashable form of [{{ info.owned_name }}], for use in table keys.
+///
+/// [{{ info.owned_name }}] implements `Hash` and `Eq`, so it is its own key.
+pub type {{ key_name }} = {{ info.owned_name }};
+{% else %}
+/// Hashable form of [{{ info.owned_name }}], for use in table keys.
+///
+/// Floats are stored as their bit patterns, so keys compare bitwise: `-0.0`
+/// and `0.0` differ, and NaNs are equal only when their bits are.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct {{ key_name }} {
+    {% for field in fields -%}
+        /// Key of the [`{{field.name_and_docs.original_name}}` field]({{info.owned_name}}#structfield.{{field.info.name}}).
+        pub {{ field.info.name }}: {{ field.info.key_type }},
+    {% endfor %}
+}
+
+impl ::core::convert::From<{{ info.owned_name }}> for {{ key_name }} {
+    #[inline]
+    fn from(value: {{ info.owned_name }}) -> Self {
+        Self {
+            {% for field in fields -%}
+                {{ field.info.name }}: {{ field.info.to_key_code }},
+            {% endfor %}
+        }
+    }
+}
+
+impl ::core::convert::From<{{ key_name }}> for {{ info.owned_name }} {
+    #[inline]
+    fn from(value: {{ key_name }}) -> Self {
+        Self {
+            {% for field in fields -%}
+                {{ field.info.name }}: {{ field.info.from_key_code }},
+            {% endfor %}
+        }
+    }
+}
+{% endif %}
+{% when None %}
+{% endmatch %}
