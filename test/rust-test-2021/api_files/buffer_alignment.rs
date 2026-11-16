@@ -189,35 +189,44 @@ let builds: [(&str, Build); 3] = [
 // One builder is reused across all cases, so every case also checks that
 // `clear` resets the alignment state.
 let mut builder = planus::Builder::new();
-for union in unions.iter() {
-    for padding in 0..all_bytes.len() {
-        let bytes = &all_bytes[..padding];
-        let mut previous: Option<Vec<u8>> = None;
-        for (name, build) in builds {
-            builder.clear();
-            let root = build(&mut builder, bytes, union.clone());
-            let data = builder.finish(root, None);
-            let case = format!("{name}, {padding} bytes, union {union:?}");
+for file_identifier in [None, Some(*b"ALGN")] {
+    for union in unions.iter() {
+        for padding in 0..all_bytes.len() {
+            let bytes = &all_bytes[..padding];
+            let mut previous: Option<Vec<u8>> = None;
+            for (name, build) in builds {
+                builder.clear();
+                let root = build(&mut builder, bytes, union.clone());
+                let data = builder.finish(root, file_identifier);
+                let case = format!(
+                    "{name}, {padding} bytes, union {union:?}, identifier {file_identifier:?}"
+                );
 
-            verify(data).unwrap_or_else(|err| panic!("{}: {}", case, err));
-            check_alignment(data, &case);
+                verify(data).unwrap_or_else(|err| panic!("{}: {}", case, err));
+                check_alignment(data, &case);
+                if let Some(file_identifier) = file_identifier {
+                    assert_eq!(data[4..8], file_identifier);
+                    let file_identifier = core::str::from_utf8(&file_identifier).unwrap();
+                    assert!(flatbuffers::buffer_has_identifier(data, file_identifier, false));
+                }
 
-            let root: Root = RootRef::read_as_root(data).unwrap().try_into().unwrap();
-            assert_eq!(root.bytes.as_deref(), Some(bytes));
-            assert_eq!(root.uint64s.as_deref(), Some(&uint64s[..]));
-            assert_eq!(root.float64s.as_deref(), Some(&float64s[..]));
-            assert_eq!(root.struct64s.as_deref(), Some(&struct64s[..]));
-            assert_eq!(root.struct16s.as_deref(), Some(&struct16s[..]));
-            assert_eq!(root.tables.as_deref(), Some(&tables[..]));
-            assert_eq!(root.union_.as_ref(), Some(union));
-            assert_eq!(root.unions.as_deref(), Some(&unions[..]));
-            assert_eq!(root.struct16, Some(Struct16 { value: 10 }));
-            assert_eq!(root.value, 11);
+                let root: Root = RootRef::read_as_root(data).unwrap().try_into().unwrap();
+                assert_eq!(root.bytes.as_deref(), Some(bytes));
+                assert_eq!(root.uint64s.as_deref(), Some(&uint64s[..]));
+                assert_eq!(root.float64s.as_deref(), Some(&float64s[..]));
+                assert_eq!(root.struct64s.as_deref(), Some(&struct64s[..]));
+                assert_eq!(root.struct16s.as_deref(), Some(&struct16s[..]));
+                assert_eq!(root.tables.as_deref(), Some(&tables[..]));
+                assert_eq!(root.union_.as_ref(), Some(union));
+                assert_eq!(root.unions.as_deref(), Some(&unions[..]));
+                assert_eq!(root.struct16, Some(Struct16 { value: 10 }));
+                assert_eq!(root.value, 11);
 
-            if let Some(previous) = &previous {
-                assert_eq!(previous.as_slice(), data, "{case}");
+                if let Some(previous) = &previous {
+                    assert_eq!(previous.as_slice(), data, "{case}");
+                }
+                previous = Some(data.to_vec());
             }
-            previous = Some(data.to_vec());
         }
     }
 }
