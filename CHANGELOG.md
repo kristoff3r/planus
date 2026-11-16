@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Parse and preserve union variant metadata in the CST and formatter [#312](https://github.com/planus-org/planus/pull/312).
 - Add `--ignore-unknown-metadata` to allow generating code from schemas that include generator-specific attributes.
 - Allow keywords as identifiers like flatc [#313](https://github.com/planus-org/planus/pull/313)
+- Implement `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` and `Debug` for `Offset<T>`, `UnionOffset<T>` and `UnionVectorOffset<T>`, comparing by position in the buffer, so offsets can be used as map keys.
 
 ### Fixed
 - Fixed rustfmt error handling. Don't return error if rustfmt succeed but prints to stderr, just print out stderr instead. [#363](https://github.com/planus-org/planus/pull/363) [#373](https://github.com/planus-org/planus/pull/373)

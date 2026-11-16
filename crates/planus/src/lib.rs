@@ -167,6 +167,59 @@ impl<T: ?Sized> Clone for UnionVectorOffset<T> {
     }
 }
 
+/// Implements comparison, hashing and `Debug` for an offset type by the
+/// position(s) it holds. Manual impls, because derives would require `T` to
+/// implement the traits. Positions are only comparable between offsets into the
+/// same buffer.
+macro_rules! impl_offset_traits {
+    ($ty:ident, $name:literal, |$this:ident| $key:expr) => {
+        impl<T: ?Sized> $ty<T> {
+            #[inline]
+            fn position_key(&self) -> impl Ord + core::hash::Hash + core::fmt::Debug {
+                let $this = self;
+                $key
+            }
+        }
+        impl<T: ?Sized> PartialEq for $ty<T> {
+            #[inline]
+            fn eq(&self, other: &Self) -> bool {
+                self.cmp(other).is_eq()
+            }
+        }
+        impl<T: ?Sized> Eq for $ty<T> {}
+        impl<T: ?Sized> PartialOrd for $ty<T> {
+            #[inline]
+            fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+                Some(self.cmp(other))
+            }
+        }
+        impl<T: ?Sized> Ord for $ty<T> {
+            #[inline]
+            fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+                self.position_key().cmp(&other.position_key())
+            }
+        }
+        impl<T: ?Sized> core::hash::Hash for $ty<T> {
+            #[inline]
+            fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+                self.position_key().hash(state);
+            }
+        }
+        impl<T: ?Sized> core::fmt::Debug for $ty<T> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_tuple($name).field(&self.position_key()).finish()
+            }
+        }
+    };
+}
+
+impl_offset_traits!(Offset, "Offset", |o| o.offset);
+impl_offset_traits!(UnionOffset, "UnionOffset", |o| (o.tag, o.offset.offset));
+impl_offset_traits!(UnionVectorOffset, "UnionVectorOffset", |o| (
+    o.tags_offset.offset,
+    o.values_offset.offset
+));
+
 impl<T: ?Sized> UnionVectorOffset<T> {
     #[doc(hidden)]
     #[inline]
@@ -188,5 +241,32 @@ impl<T: ?Sized> UnionVectorOffset<T> {
     #[inline]
     pub fn values_offset(&self) -> Offset<[Offset<()>]> {
         self.values_offset
+    }
+}
+
+#[cfg(test)]
+mod offset_tests {
+    use alloc::collections::BTreeSet;
+
+    use super::*;
+
+    #[test]
+    fn offsets_compare_by_position() {
+        let mut builder = Builder::new();
+        let first: Offset<[u32]> = builder.create_vector([1u32, 2, 3]);
+        let second: Offset<[u32]> = builder.create_vector([4u32, 5]);
+
+        assert_eq!(first, first);
+        assert_ne!(first, second);
+        // Later writes sit further from the end of the buffer.
+        assert!(first < second);
+
+        let set: BTreeSet<_> = [first, second, first].into_iter().collect();
+        assert_eq!(set.len(), 2);
+
+        let union_a = UnionOffset::<()>::new(1, first.downcast());
+        let union_b = UnionOffset::<()>::new(2, first.downcast());
+        assert_ne!(union_a, union_b);
+        assert_eq!(union_a, UnionOffset::<()>::new(1, first.downcast()));
     }
 }
