@@ -1,0 +1,16 @@
+Root {
+    pad: None,
+    u64s: None,
+    i64s: None,
+    f64s: None,
+    structs: None,
+    nested: None,
+    nesteds: None,
+    align16: None,
+    align16s: None,
+    tables: None,
+    u64_field: 0,
+    f64_field: 1.5,
+    opt_u64: None,
+    u8_field: 0,
+}

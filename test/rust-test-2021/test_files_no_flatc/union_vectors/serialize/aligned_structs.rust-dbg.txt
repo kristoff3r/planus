@@ -1,0 +1,39 @@
+RootRef {
+    value: Ok(
+        [
+            Ok(
+                InnerStruct(
+                    InnerStructRef {
+                        value: 17,
+                    },
+                ),
+            ),
+            Ok(
+                InnerStruct64(
+                    InnerStruct64Ref {
+                        value: 18,
+                    },
+                ),
+            ),
+            Ok(
+                String(
+                    "foo",
+                ),
+            ),
+            Ok(
+                InnerStruct16(
+                    InnerStruct16Ref {
+                        value: 19,
+                    },
+                ),
+            ),
+            Ok(
+                InnerStruct64(
+                    InnerStruct64Ref {
+                        value: 20,
+                    },
+                ),
+            ),
+        ],
+    ),
+}

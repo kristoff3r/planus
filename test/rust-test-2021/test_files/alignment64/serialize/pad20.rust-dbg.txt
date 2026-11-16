@@ -1,0 +1,108 @@
+RootRef {
+    pad: Ok(
+        "abcdefghijkl",
+    ),
+    u64s: Ok(
+        [
+            1,
+            18446744073709551615,
+        ],
+    ),
+    i64s: Ok(
+        [
+            -1,
+            9223372036854775807,
+            -9223372036854775808,
+        ],
+    ),
+    f64s: Ok(
+        [
+            1.5,
+            -2.25,
+        ],
+    ),
+    structs: Ok(
+        [
+            Struct64Ref {
+                value: 1,
+            },
+            Struct64Ref {
+                value: 2,
+            },
+        ],
+    ),
+    nested: Ok(
+        NestedRef {
+            a: 3,
+            inner: Struct64Ref {
+                value: 4,
+            },
+            b: 5,
+        },
+    ),
+    nesteds: Ok(
+        [
+            NestedRef {
+                a: 6,
+                inner: Struct64Ref {
+                    value: 7,
+                },
+                b: 8,
+            },
+        ],
+    ),
+    align16: Ok(
+        Align16Ref {
+            value: 9,
+        },
+    ),
+    align16s: Ok(
+        [
+            Align16Ref {
+                value: 10,
+            },
+            Align16Ref {
+                value: 11,
+            },
+            Align16Ref {
+                value: 12,
+            },
+        ],
+    ),
+    tables: Ok(
+        [
+            Ok(
+                InnerRef {
+                    a: Ok(
+                        13,
+                    ),
+                    value: Ok(
+                        14,
+                    ),
+                },
+            ),
+            Ok(
+                InnerRef {
+                    a: Ok(
+                        0,
+                    ),
+                    value: Ok(
+                        16,
+                    ),
+                },
+            ),
+        ],
+    ),
+    u64_field: Ok(
+        17,
+    ),
+    f64_field: Ok(
+        18.5,
+    ),
+    opt_u64: Ok(
+        19,
+    ),
+    u8_field: Ok(
+        20,
+    ),
+}

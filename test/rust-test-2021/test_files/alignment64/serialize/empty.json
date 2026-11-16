@@ -1,0 +1,16 @@
+{
+  "pad": null,
+  "u64s": null,
+  "i64s": null,
+  "f64s": null,
+  "structs": null,
+  "nested": null,
+  "nesteds": null,
+  "align16": null,
+  "align16s": null,
+  "tables": null,
+  "u64_field": 0,
+  "f64_field": 1.5,
+  "opt_u64": null,
+  "u8_field": 0
+}

@@ -7,6 +7,7 @@ union Union {
   InnerTable,
   InnerStruct,
   InnerStruct64,
+  InnerStruct16,
 }
 
 table Root {
@@ -23,4 +24,8 @@ struct InnerStruct {
 
 struct InnerStruct64 {
   value: uint64;
+}
+
+struct InnerStruct16 (force_align: 16) {
+  value: uint8;
 }

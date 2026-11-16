@@ -1,0 +1,90 @@
+Root {
+    pad: Some(
+        "",
+    ),
+    u64s: Some(
+        [
+            1,
+            18446744073709551615,
+        ],
+    ),
+    i64s: Some(
+        [
+            -1,
+            9223372036854775807,
+            -9223372036854775808,
+        ],
+    ),
+    f64s: Some(
+        [
+            1.5,
+            -2.25,
+        ],
+    ),
+    structs: Some(
+        [
+            Struct64 {
+                value: 1,
+            },
+            Struct64 {
+                value: 2,
+            },
+        ],
+    ),
+    nested: Some(
+        Nested {
+            a: 3,
+            inner: Struct64 {
+                value: 4,
+            },
+            b: 5,
+        },
+    ),
+    nesteds: Some(
+        [
+            Nested {
+                a: 6,
+                inner: Struct64 {
+                    value: 7,
+                },
+                b: 8,
+            },
+        ],
+    ),
+    align16: Some(
+        Align16 {
+            value: 9,
+        },
+    ),
+    align16s: Some(
+        [
+            Align16 {
+                value: 10,
+            },
+            Align16 {
+                value: 11,
+            },
+            Align16 {
+                value: 12,
+            },
+        ],
+    ),
+    tables: Some(
+        [
+            Inner {
+                a: 13,
+                value: 14,
+            },
+            Inner {
+                a: 0,
+                value: 16,
+            },
+        ],
+    ),
+    u64_field: 17,
+    f64_field: 18.5,
+    opt_u64: Some(
+        19,
+    ),
+    u8_field: 20,
+}

@@ -1,0 +1,27 @@
+{
+  "value": [
+    {
+      "InnerStruct": {
+        "value": 17
+      }
+    },
+    {
+      "InnerStruct64": {
+        "value": 18
+      }
+    },
+    {
+      "String": "foo"
+    },
+    {
+      "InnerStruct16": {
+        "value": 19
+      }
+    },
+    {
+      "InnerStruct64": {
+        "value": 20
+      }
+    }
+  ]
+}

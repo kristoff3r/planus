@@ -1,0 +1,35 @@
+struct Struct64 {
+  value: uint64;
+}
+
+struct Nested {
+  a: uint8;
+  inner: Struct64;
+  b: uint16;
+}
+
+struct Align16 (force_align: 16) {
+  value: uint64;
+}
+
+table Inner {
+  a: uint8;
+  value: uint64;
+}
+
+table Root {
+  pad: string;
+  u64s: [uint64];
+  i64s: [int64];
+  f64s: [double];
+  structs: [Struct64];
+  nested: Nested;
+  nesteds: [Nested];
+  align16: Align16;
+  align16s: [Align16];
+  tables: [Inner];
+  u64_field: uint64;
+  f64_field: double = 1.5;
+  opt_u64: uint64 = null;
+  u8_field: uint8;
+}
