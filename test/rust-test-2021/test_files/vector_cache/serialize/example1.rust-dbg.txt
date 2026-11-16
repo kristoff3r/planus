@@ -1,0 +1,121 @@
+RootRef {
+    u32_a: Ok(
+        [
+            1,
+            2,
+        ],
+    ),
+    u32_b: Ok(
+        [
+            1,
+            2,
+        ],
+    ),
+    colors: Ok(
+        [
+            Ok(
+                Green,
+            ),
+            Ok(
+                Blue,
+            ),
+        ],
+    ),
+    pairs_a: Ok(
+        [
+            PairRef {
+                a: 1,
+                b: 2,
+            },
+        ],
+    ),
+    pairs_b: Ok(
+        [
+            PairRef {
+                a: 1,
+                b: 2,
+            },
+        ],
+    ),
+    u64: Ok(
+        [
+            8589934593,
+        ],
+    ),
+    wides: Ok(
+        [
+            WideRef {
+                value: 8589934593,
+            },
+        ],
+    ),
+    bools_a: Ok(
+        [
+            true,
+            false,
+            true,
+        ],
+    ),
+    bools_b: Ok(
+        [
+            true,
+            false,
+            true,
+        ],
+    ),
+    padded_a: Ok(
+        [
+            PaddedRef {
+                a: 1,
+                b: 2,
+            },
+            PaddedRef {
+                a: 3,
+                b: 4,
+            },
+        ],
+    ),
+    padded_b: Ok(
+        [
+            PaddedRef {
+                a: 1,
+                b: 2,
+            },
+            PaddedRef {
+                a: 3,
+                b: 4,
+            },
+        ],
+    ),
+    inner_a: Ok(
+        [
+            Ok(
+                InnerRef {
+                    value: Ok(
+                        1,
+                    ),
+                },
+            ),
+        ],
+    ),
+    inner_b: Ok(
+        [
+            Ok(
+                InnerRef {
+                    value: Ok(
+                        1,
+                    ),
+                },
+            ),
+        ],
+    ),
+    empty_u16: Ok(
+        [],
+    ),
+    empty_u64: Ok(
+        [],
+    ),
+    empty_inner: Ok(
+        [],
+    ),
+}

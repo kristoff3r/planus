@@ -1,0 +1,109 @@
+Root {
+    u32_a: Some(
+        [
+            1,
+            2,
+        ],
+    ),
+    u32_b: Some(
+        [
+            1,
+            2,
+        ],
+    ),
+    colors: Some(
+        [
+            Green,
+            Blue,
+        ],
+    ),
+    pairs_a: Some(
+        [
+            Pair {
+                a: 1,
+                b: 2,
+            },
+        ],
+    ),
+    pairs_b: Some(
+        [
+            Pair {
+                a: 1,
+                b: 2,
+            },
+        ],
+    ),
+    u64_: Some(
+        [
+            8589934593,
+        ],
+    ),
+    wides: Some(
+        [
+            Wide {
+                value: 8589934593,
+            },
+        ],
+    ),
+    bools_a: Some(
+        [
+            true,
+            false,
+            true,
+        ],
+    ),
+    bools_b: Some(
+        [
+            true,
+            false,
+            true,
+        ],
+    ),
+    padded_a: Some(
+        [
+            Padded {
+                a: 1,
+                b: 2,
+            },
+            Padded {
+                a: 3,
+                b: 4,
+            },
+        ],
+    ),
+    padded_b: Some(
+        [
+            Padded {
+                a: 1,
+                b: 2,
+            },
+            Padded {
+                a: 3,
+                b: 4,
+            },
+        ],
+    ),
+    inner_a: Some(
+        [
+            Inner {
+                value: 1,
+            },
+        ],
+    ),
+    inner_b: Some(
+        [
+            Inner {
+                value: 1,
+            },
+        ],
+    ),
+    empty_u16: Some(
+        [],
+    ),
+    empty_u64: Some(
+        [],
+    ),
+    empty_inner: Some(
+        [],
+    ),
+}

@@ -84,6 +84,7 @@ mod root {
             unsafe impl ::planus::Primitive for Color {
                 const ALIGNMENT: usize = 1;
                 const SIZE: usize = 1;
+                const POSITION_INDEPENDENT: bool = true;
             }
 
             impl ::planus::WriteAsPrimitive<Color> for Color {
@@ -438,6 +439,7 @@ mod root {
             unsafe impl ::planus::Primitive for Vec3 {
                 const ALIGNMENT: usize = 4;
                 const SIZE: usize = 12;
+                const POSITION_INDEPENDENT: bool = true;
             }
 
             #[allow(clippy::identity_op)]

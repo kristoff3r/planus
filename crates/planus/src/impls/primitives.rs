@@ -11,6 +11,7 @@ macro_rules! unsafe_gen_primitive_types {
         unsafe impl Primitive for $ty {
             const ALIGNMENT: usize = $size;
             const SIZE: usize = $size;
+            const POSITION_INDEPENDENT: bool = true;
         }
 
         impl WriteAsPrimitive<$ty> for $ty {

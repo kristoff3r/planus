@@ -11,6 +11,14 @@ where
         for v in self.iter() {
             tmp.push(v.prepare(builder));
         }
+
+        // Empty vectors hold no elements, so they are position independent
+        // even when their element type is not.
+        #[cfg(feature = "vector-cache")]
+        if P::POSITION_INDEPENDENT || tmp.is_empty() {
+            return builder.write_cached_vector::<T, P>(&tmp);
+        }
+
         // SAFETY: The inner closure always initializes the entire buffer, because it calls `write_values` with `tmp.len()` values each of length `T::STRIDE`.
         unsafe {
             builder.write_with(

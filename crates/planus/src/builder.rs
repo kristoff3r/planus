@@ -1,5 +1,7 @@
 use core::{marker::PhantomData, mem::MaybeUninit};
 
+#[cfg(feature = "vector-cache")]
+use crate::VectorWrite;
 use crate::{
     Offset, Primitive, UnionVectorOffset, WriteAsOffset, WriteAsUnionVector, backvec::BackVec,
 };
@@ -29,6 +31,12 @@ pub struct Builder {
     pub(crate) string_cache: crate::builder_cache::Cache<crate::builder_cache::ByteVec>,
     #[cfg(feature = "bytes-cache")]
     pub(crate) bytes_cache: crate::builder_cache::Cache<crate::builder_cache::ByteVec>,
+    #[cfg(feature = "vector-cache")]
+    vector_cache: crate::builder_cache::VectorCache,
+    // Holds the serialized form of a vector while it is looked up in
+    // `vector_cache`, kept around to reuse its allocation
+    #[cfg(feature = "vector-cache")]
+    vector_cache_scratch: alloc::vec::Vec<u8>,
 
     // This is a bit complicated. The buffer has support for guaranteeing a
     // specific write gets a specific alignment. It has many writes and thus
@@ -104,6 +112,11 @@ impl Builder {
             #[cfg(feature = "bytes-cache")]
             bytes_cache: crate::builder_cache::Cache::default(),
 
+            #[cfg(feature = "vector-cache")]
+            vector_cache: crate::builder_cache::VectorCache::default(),
+            #[cfg(feature = "vector-cache")]
+            vector_cache_scratch: alloc::vec::Vec::new(),
+
             #[cfg(debug_assertions)]
             missing_bytes: 0,
         }
@@ -136,6 +149,8 @@ impl Builder {
         self.string_cache.clear();
         #[cfg(feature = "bytes-cache")]
         self.bytes_cache.clear();
+        #[cfg(feature = "vector-cache")]
+        self.vector_cache.clear();
         self.delayed_bytes = 0;
         self.alignment_mask = 0;
         #[cfg(debug_assertions)]
@@ -194,6 +209,59 @@ impl Builder {
         #[cfg(feature = "vtable-cache")]
         self.vtable_cache
             .insert(hash, offset.try_into().unwrap(), self.inner.as_slice());
+        offset
+    }
+
+    /// Writes a vector whose serialized bytes do not depend on its position,
+    /// or returns the offset of an identical vector written earlier.
+    #[cfg(feature = "vector-cache")]
+    pub(crate) fn write_cached_vector<T, P>(&mut self, values: &[T::Value]) -> Offset<[P]>
+    where
+        T: VectorWrite<P>,
+        P: Primitive,
+    {
+        let data_len = T::STRIDE.checked_mul(values.len()).unwrap();
+        let alignment_mask = P::ALIGNMENT_MASK.max(u32::ALIGNMENT_MASK);
+
+        let mut key = core::mem::take(&mut self.vector_cache_scratch);
+        key.clear();
+        key.reserve(4 + data_len);
+        key.extend_from_slice(&u32::try_from(values.len()).unwrap().to_le_bytes());
+        // SAFETY: `write_values` initializes `data_len` bytes. The bytes do not
+        // depend on the buffer position, so it only has to keep the position
+        // arithmetic of the elements from underflowing, which the position of
+        // the data in a real buffer would also do.
+        unsafe {
+            T::write_values(
+                values,
+                key.spare_capacity_mut().as_mut_ptr(),
+                u32::try_from(data_len).unwrap(),
+            );
+            key.set_len(4 + data_len);
+        }
+
+        let hash = self.vector_cache.hash(&key);
+        let offset = if let Some(offset) =
+            self.vector_cache
+                .get(self.inner.as_slice(), hash, &key, alignment_mask)
+        {
+            offset.into()
+        } else {
+            self.prepare_write(data_len, alignment_mask);
+            self.write(&key[4..]);
+            self.prepare_write(4, 0);
+            self.write(&key[..4]);
+            let offset = self.current_offset();
+            self.vector_cache.insert(
+                hash,
+                offset.into(),
+                data_len,
+                alignment_mask,
+                self.inner.as_slice(),
+            );
+            offset
+        };
+        self.vector_cache_scratch = key;
         offset
     }
 
@@ -373,5 +441,112 @@ mod tests {
             builder.finish(builder.current_offset::<()>(), None),
             b"\x08\x00\x00\x00\x00\x00\x00\x00ABCDEFGH\x00\x00YXIJKL"
         );
+    }
+
+    #[cfg(feature = "vector-cache")]
+    mod vector_cache {
+        use super::*;
+
+        /// Bytes of the vector at `offset` in a finished buffer, including the
+        /// length prefix, and the position of its element data
+        fn vector_bytes<T: ?Sized>(
+            buffer: &[u8],
+            offset: Offset<T>,
+            stride: usize,
+        ) -> (&[u8], usize) {
+            let start = buffer.len() - offset.offset as usize;
+            let len = u32::from_le_bytes(buffer[start..start + 4].try_into().unwrap()) as usize;
+            (&buffer[start..start + 4 + len * stride], start + 4)
+        }
+
+        #[test]
+        fn shares_identical_vectors() {
+            let mut builder = Builder::new();
+            let a = builder.create_vector([1u32, 2, 3].as_slice());
+            let b = builder.create_vector(alloc::vec![1u32, 2, 3]);
+            let c = builder.create_vector([1u32, 2, 3]);
+            let d = builder.create_vector([1u32, 2, 4].as_slice());
+            let e = builder.create_vector([1i32, 2, 3].as_slice());
+            assert_eq!(a, b);
+            assert_eq!(a, c);
+            assert_ne!(a, d);
+            // Elements of another type with the same bytes and alignment
+            assert_eq!(a.offset, e.offset);
+
+            let f = builder.create_vector([true, false].as_slice());
+            let g = builder.create_vector([true, false].as_slice());
+            assert_eq!(f, g);
+
+            let buffer = builder.finish(builder.current_offset::<()>(), None);
+            assert_eq!(
+                vector_bytes(buffer, a, 4).0,
+                b"\x03\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00"
+            );
+            assert_eq!(vector_bytes(buffer, d, 4).0[12..], [4, 0, 0, 0]);
+        }
+
+        #[test]
+        fn respects_alignment() {
+            let mut builder = Builder::new();
+            let empty_u32 = builder.create_vector(alloc::vec::Vec::<u32>::new());
+            // The empty `[u32]` was written with 4-byte alignment only
+            let empty_u64 = builder.create_vector(alloc::vec::Vec::<u64>::new());
+            assert_ne!(empty_u32.offset, empty_u64.offset);
+            let empty_u16 = builder.create_vector(alloc::vec::Vec::<u16>::new());
+            assert!(empty_u16.offset == empty_u32.offset || empty_u16.offset == empty_u64.offset);
+            let empty_u64_again = builder.create_vector(alloc::vec::Vec::<u64>::new());
+            assert_eq!(empty_u64, empty_u64_again);
+
+            let u64s = builder.create_vector([7u64].as_slice());
+            builder.prepare_write(1, 0);
+            builder.write(&[0]);
+            let u64s_again = builder.create_vector([7u64].as_slice());
+            assert_eq!(u64s, u64s_again);
+
+            let buffer = builder.finish(builder.current_offset::<()>(), None);
+            assert_eq!(vector_bytes(buffer, empty_u64, 8).1 % 8, 0);
+            assert_eq!(vector_bytes(buffer, u64s, 8).1 % 8, 0);
+        }
+
+        #[test]
+        fn shares_empty_offset_vectors() {
+            let mut builder = Builder::new();
+            let empty_u32 = builder.create_vector(alloc::vec::Vec::<u32>::new());
+            let empty_strings = builder.create_vector(alloc::vec::Vec::<Offset<str>>::new());
+            assert_eq!(empty_u32.offset, empty_strings.offset);
+        }
+
+        #[test]
+        fn never_shares_offset_vectors() {
+            let mut builder = Builder::new();
+            let a = builder.create_string("a");
+            let strings_a = builder.create_vector([a].as_slice());
+            let b = builder.create_string("b");
+            let strings_b = builder.create_vector([b].as_slice());
+            assert_ne!(strings_a.offset, strings_b.offset);
+
+            // Both vectors hold the same relative offset, so sharing them by
+            // their bytes would point the second one at "a"
+            let buffer = builder.finish(builder.current_offset::<()>(), None);
+            assert_eq!(
+                vector_bytes(buffer, strings_a, 4).0,
+                vector_bytes(buffer, strings_b, 4).0
+            );
+        }
+
+        #[test]
+        fn clear_resets_cache() {
+            let mut builder = Builder::new();
+            builder.create_vector([1u16, 2].as_slice());
+            builder.clear();
+            let a = builder.create_vector([3u16, 4, 5, 6, 7, 8].as_slice());
+            let b = builder.create_vector([1u16, 2].as_slice());
+            assert_ne!(a, b);
+            let buffer = builder.finish(builder.current_offset::<()>(), None);
+            assert_eq!(
+                vector_bytes(buffer, b, 2).0,
+                b"\x02\x00\x00\x00\x01\x00\x02\x00"
+            );
+        }
     }
 }

@@ -1,0 +1,18 @@
+{
+  "u32_a": [1, 2],
+  "u32_b": [1, 2],
+  "colors": ["Green", "Blue"],
+  "pairs_a": [{ "a": 1, "b": 2 }],
+  "pairs_b": [{ "a": 1, "b": 2 }],
+  "u64": [8589934593],
+  "wides": [{ "value": 8589934593 }],
+  "bools_a": [true, false, true],
+  "bools_b": [true, false, true],
+  "padded_a": [{ "a": 1, "b": 2 }, { "a": 3, "b": 4 }],
+  "padded_b": [{ "a": 1, "b": 2 }, { "a": 3, "b": 4 }],
+  "inner_a": [{ "value": 1 }],
+  "inner_b": [{ "value": 1 }],
+  "empty_u16": [],
+  "empty_u64": [],
+  "empty_inner": []
+}

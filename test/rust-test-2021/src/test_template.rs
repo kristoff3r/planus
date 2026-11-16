@@ -43,6 +43,9 @@ fn test_serialize() {
             } else if cfg!(feature = "bytes-cache") && FILE_PATH.contains("byte") {
                 dump_path.set_extension("bytes-cache.dump.txt");
                 bin_path.set_extension("bytes-cache.bin");
+            } else if cfg!(feature = "vector-cache") && FILE_PATH.contains("vector_cache") {
+                dump_path.set_extension("vector-cache.dump.txt");
+                bin_path.set_extension("vector-cache.bin");
             } else {
                 dump_path.set_extension("dump.txt");
                 bin_path.set_extension("bin");

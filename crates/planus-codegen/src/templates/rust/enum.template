@@ -48,6 +48,7 @@ impl ::core::convert::From<{{info.name}}> for {{info.repr_type}} {
 unsafe impl ::planus::Primitive for {{ info.name }} {
     const ALIGNMENT: usize = {{ size }};
     const SIZE: usize = {{ size }};
+    const POSITION_INDEPENDENT: bool = true;
 }
 
 impl ::planus::WriteAsPrimitive<{{ info.name }}> for {{ info.name }} {

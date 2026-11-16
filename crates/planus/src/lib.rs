@@ -17,7 +17,8 @@ pub mod vectors;
 #[cfg(any(
     feature = "vtable-cache",
     feature = "string-cache",
-    feature = "bytes-cache"
+    feature = "bytes-cache",
+    feature = "vector-cache"
 ))]
 mod builder_cache;
 

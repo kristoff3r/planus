@@ -9,6 +9,7 @@ use crate::{
 unsafe impl Primitive for bool {
     const ALIGNMENT: usize = 1;
     const SIZE: usize = 1;
+    const POSITION_INDEPENDENT: bool = true;
 }
 
 impl WriteAsPrimitive<bool> for bool {

@@ -7,11 +7,12 @@ build = "build.rs"
 edition = "2021"
 
 [features]
-default = ["std", "vtable-cache", "string-cache", "bytes-cache"]
+default = ["std", "vtable-cache", "string-cache", "bytes-cache", "vector-cache"]
 std = ["planus/std", "serde/std"]
 vtable-cache = ["planus/vtable-cache"]
 string-cache = ["planus/string-cache"]
 bytes-cache = ["planus/bytes-cache"]
+vector-cache = ["planus/vector-cache"]
 
 [dependencies]
 color-eyre.workspace = true

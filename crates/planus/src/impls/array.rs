@@ -16,6 +16,14 @@ where
         //       https://github.com/rust-lang/rust/issues/80908
         let tmp =
             unsafe { (&tmp as *const [MaybeUninit<T::Value>; N] as *const [T::Value; N]).read() };
+
+        // Empty vectors hold no elements, so they are position independent
+        // even when their element type is not.
+        #[cfg(feature = "vector-cache")]
+        if P::POSITION_INDEPENDENT || N == 0 {
+            return builder.write_cached_vector::<T, P>(&tmp);
+        }
+
         unsafe {
             builder.write_with(
                 4 + T::STRIDE.checked_mul(self.len()).unwrap(),

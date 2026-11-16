@@ -20,6 +20,7 @@ pub struct {{ info.owned_name }} {
 unsafe impl ::planus::Primitive for {{ info.owned_name }} {
     const ALIGNMENT: usize = {{ alignment }};
     const SIZE: usize = {{ size }};
+    const POSITION_INDEPENDENT: bool = true;
 }
 
 #[allow(clippy::identity_op)]

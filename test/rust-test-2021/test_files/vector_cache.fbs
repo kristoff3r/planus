@@ -1,0 +1,42 @@
+struct Pair {
+  a: uint32;
+  b: uint32;
+}
+
+struct Wide {
+  value: uint64;
+}
+
+struct Padded {
+  a: uint16;
+  b: uint8;
+}
+
+enum Color : uint32 {
+  Red,
+  Green,
+  Blue,
+}
+
+table Inner {
+  value: int32;
+}
+
+table Root {
+  u32_a: [uint32];
+  u32_b: [uint32];
+  colors: [Color];
+  pairs_a: [Pair];
+  pairs_b: [Pair];
+  u64: [uint64];
+  wides: [Wide];
+  bools_a: [bool];
+  bools_b: [bool];
+  padded_a: [Padded];
+  padded_b: [Padded];
+  inner_a: [Inner];
+  inner_b: [Inner];
+  empty_u16: [uint16];
+  empty_u64: [uint64];
+  empty_inner: [Inner];
+}

@@ -13,6 +13,16 @@ pub unsafe trait Primitive {
     const ALIGNMENT: usize;
     const ALIGNMENT_MASK: usize = Self::ALIGNMENT - 1;
     const SIZE: usize;
+    /// Whether the serialized bytes of a value are the same wherever in the
+    /// buffer it is written. This holds for scalars, enums and structs, but
+    /// not for offsets, which are stored relative to their own position.
+    ///
+    /// Vectors of position-independent elements are deduplicated by their
+    /// serialized bytes when the `vector-cache` feature is enabled. Claiming
+    /// position independence for a type whose bytes depend on the position
+    /// makes the builder reuse a vector whose contents are wrong at the new
+    /// position.
+    const POSITION_INDEPENDENT: bool = false;
 }
 
 /// Interface for getting a view into serialized data.
