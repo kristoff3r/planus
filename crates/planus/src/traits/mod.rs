@@ -13,6 +13,9 @@ pub unsafe trait Primitive {
     const ALIGNMENT: usize;
     const ALIGNMENT_MASK: usize = Self::ALIGNMENT - 1;
     const SIZE: usize;
+    /// Whether values are offsets, which are encoded relative to the position
+    /// they are written at.
+    const IS_OFFSET: bool = false;
 }
 
 /// Interface for getting a view into serialized data.

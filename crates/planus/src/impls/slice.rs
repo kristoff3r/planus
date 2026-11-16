@@ -11,27 +11,35 @@ where
         for v in self.iter() {
             tmp.push(v.prepare(builder));
         }
-        // SAFETY: The inner closure always initializes the entire buffer, because it calls `write_values` with `tmp.len()` values each of length `T::STRIDE`.
-        unsafe {
-            builder.write_with(
-                T::STRIDE.checked_mul(tmp.len()).unwrap(),
-                P::ALIGNMENT_MASK.max(u32::ALIGNMENT_MASK),
-                |buffer_position, bytes| {
-                    let bytes = bytes.as_mut_ptr();
+        let alignment_mask = P::ALIGNMENT_MASK.max(u32::ALIGNMENT_MASK);
+        let write = |builder: &mut Builder| {
+            // SAFETY: The inner closure always initializes the entire buffer, because it calls `write_values` with `tmp.len()` values each of length `T::STRIDE`.
+            unsafe {
+                builder.write_with(
+                    T::STRIDE.checked_mul(tmp.len()).unwrap(),
+                    alignment_mask,
+                    |buffer_position, bytes| {
+                        let bytes = bytes.as_mut_ptr();
 
-                    T::write_values(&tmp, bytes, buffer_position);
-                },
-            );
-        }
+                        T::write_values(&tmp, bytes, buffer_position);
+                    },
+                );
+            }
 
-        // SAFETY: The inner closure always initializes the entire buffer, because it calls `copy_from_slice` with an array of len 4
-        unsafe {
-            builder.write_with(4, 0, |_buffer_position, bytes| {
-                let len = (self.len() as u32).to_le_bytes().map(MaybeUninit::new);
-                bytes.copy_from_slice(&len);
-            });
-        }
-        builder.current_offset()
+            // SAFETY: The inner closure always initializes the entire buffer, because it calls `copy_from_slice` with an array of len 4
+            unsafe {
+                builder.write_with(4, 0, |_buffer_position, bytes| {
+                    let len = (self.len() as u32).to_le_bytes().map(MaybeUninit::new);
+                    bytes.copy_from_slice(&len);
+                });
+            }
+            builder.current_offset()
+        };
+
+        #[cfg(feature = "table-cache")]
+        return crate::table_cache::dedup_vector::<T, P>(builder, &tmp, alignment_mask, write);
+        #[cfg(not(feature = "table-cache"))]
+        write(builder)
     }
 }
 

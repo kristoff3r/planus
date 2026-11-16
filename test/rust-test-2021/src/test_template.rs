@@ -23,7 +23,26 @@ fn test_serialize() {
             let json = std::fs::read_to_string(&file_path).unwrap();
             let root: Root = serde_json::from_str(&json).unwrap();
 
+            // Every file must decode to the same value with tables deduplicated.
+            #[cfg(feature = "table-cache")]
+            {
+                let mut builder = planus::Builder::new();
+                builder.set_table_cache(true);
+                let offset = root.prepare(&mut builder);
+                let data = builder.finish(offset, None);
+                let root2 = Root::try_from(RootRef::read_as_root(data).unwrap()).unwrap();
+                similar_asserts::assert_eq!(root, root2);
+            }
+
+            // The expected output with the table cache was written with the
+            // vtable cache, which changes where tables are written.
+            let use_table_cache = cfg!(feature = "table-cache")
+                && cfg!(feature = "vtable-cache")
+                && FILE_PATH.ends_with("/table_cache");
+
             let mut builder = planus::Builder::new();
+            #[cfg(feature = "table-cache")]
+            builder.set_table_cache(use_table_cache);
             let offset = root.prepare(&mut builder);
             let data = builder.finish(offset, None);
 
@@ -34,7 +53,10 @@ fn test_serialize() {
             let mut bin_path = file_path.clone();
             let mut dump_path = file_path.clone();
 
-            if cfg!(feature = "vtable-cache") && FILE_PATH.contains("vtable") {
+            if use_table_cache {
+                dump_path.set_extension("table-cache.dump.txt");
+                bin_path.set_extension("table-cache.bin");
+            } else if cfg!(feature = "vtable-cache") && FILE_PATH.contains("vtable") {
                 dump_path.set_extension("vtable-cache.dump.txt");
                 bin_path.set_extension("vtable-cache.bin");
             } else if cfg!(feature = "string-cache") && FILE_PATH.contains("string") {

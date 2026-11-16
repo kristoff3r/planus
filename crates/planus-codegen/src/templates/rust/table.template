@@ -53,7 +53,7 @@ impl {{info.owned_name}} {
         {% if fields.is_empty() -%}
         let table_writer: ::planus::table_writer::TableWriter::<{{max_vtable_size}}> = ::core::default::Default::default();
         unsafe {
-            table_writer.finish(builder, |_table_writer| {});
+            table_writer.finish_with_offset(builder, |_object_writer| {})
         }
         {%- else -%}
 
@@ -75,13 +75,13 @@ impl {{info.owned_name}} {
         {% endfor %}
 
         unsafe {
-            table_writer.finish(builder, |object_writer| {
+            table_writer.finish_with_offset(builder, |object_writer| {
                 {%- if fields.is_empty() -%}
                 let _ = object_writer;
                 {%- else -%}
                 {% for field in fields.alignment_order() %}
                     {%- if field.info.read_type.starts_with("::core::option::Option<") || field.info.serialize_default.is_some() -%}
-                    if let ::core::option::Option::Some(prepared_{{field.info.create_name}}) = prepared_{{field.info.create_name}} {
+                    if let ::core::option::Option::Some(prepared_{{field.info.create_name}}) = &prepared_{{field.info.create_name}} {
                     {%- endif -%}
                         {%- match field.field_type -%}
                         {%- when BackendTableFieldType::UnionKey -%} object_writer.write::<_, _, 1>(&prepared_{{field.info.create_name}}.tag());
@@ -95,11 +95,9 @@ impl {{info.owned_name}} {
                     {%- endif -%}
                 {% endfor %}
                 {% endif %}
-            });
+            })
         }
-        {%- endif -%}
-
-        builder.current_offset()
+        {%- endif %}
     }
 }
 

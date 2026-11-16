@@ -1,6 +1,8 @@
 use core::mem::{self, MaybeUninit};
 
-use crate::{Builder, Primitive, WriteAsPrimitive};
+#[cfg(feature = "table-cache")]
+use crate::table_cache::{KEY_POSITION, KeyKind};
+use crate::{Builder, Offset, Primitive, WriteAsPrimitive};
 
 #[doc(hidden)]
 pub struct TableWriter<const VTABLE_MAX_BYTES: usize> {
@@ -46,20 +48,81 @@ impl<const VTABLE_MAX_BYTES: usize> TableWriter<VTABLE_MAX_BYTES> {
         debug_assert!(self.vtable_size <= self.vtable_buffer.len());
     }
 
+    /// Writes the table and its vtable.
+    ///
+    /// # Safety
+    ///
+    /// `f` must write every entry announced with [`Self::write_entry`], in the
+    /// same order.
     #[inline]
     pub unsafe fn finish(mut self, builder: &mut Builder, f: impl FnOnce(&mut ObjectWriter<'_>)) {
-        unsafe {
-            write_array(
-                &mut self.vtable_buffer,
-                0,
-                (self.vtable_size as u16).to_le_bytes(),
-            );
-            write_array(
-                &mut self.vtable_buffer,
-                2,
-                (self.object_size as u16).to_le_bytes(),
-            );
+        self.finish_vtable();
+        unsafe { self.write(builder, f) }
+    }
 
+    /// Writes the table and its vtable and returns the offset of the table.
+    ///
+    /// When the builder deduplicates tables (see `Builder::set_table_cache`)
+    /// and an equal table has been written before, the earlier table's offset
+    /// is returned and nothing is written. `f` may be called twice.
+    ///
+    /// # Safety
+    ///
+    /// `f` must write every entry announced with [`Self::write_entry`], in the
+    /// same order, and write the same values on every call.
+    #[inline]
+    pub unsafe fn finish_with_offset<T: ?Sized>(
+        mut self,
+        builder: &mut Builder,
+        f: impl Fn(&mut ObjectWriter<'_>),
+    ) -> Offset<T> {
+        self.finish_vtable();
+
+        #[cfg(feature = "table-cache")]
+        if let Some(cache) = &mut builder.table_cache {
+            cache.start_key(KeyKind::Table, self.object_alignment_mask);
+            cache.extend_key(&self.vtable_buffer[..self.vtable_size]);
+            f(&mut ObjectWriter {
+                offset: KEY_POSITION,
+                bytes: cache.reserve_key(self.object_size - 4),
+            });
+            return match cache.get() {
+                Ok(offset) => Offset {
+                    offset,
+                    phantom: core::marker::PhantomData,
+                },
+                Err(hash) => {
+                    unsafe { self.write(builder, f) };
+                    let offset = builder.current_offset();
+                    if let Some(cache) = &mut builder.table_cache {
+                        cache.insert(hash, offset.offset);
+                    }
+                    offset
+                }
+            };
+        }
+
+        unsafe { self.write(builder, f) };
+        builder.current_offset()
+    }
+
+    #[inline]
+    fn finish_vtable(&mut self) {
+        write_array(
+            &mut self.vtable_buffer,
+            0,
+            (self.vtable_size as u16).to_le_bytes(),
+        );
+        write_array(
+            &mut self.vtable_buffer,
+            2,
+            (self.object_size as u16).to_le_bytes(),
+        );
+    }
+
+    #[inline]
+    unsafe fn write(&self, builder: &mut Builder, f: impl FnOnce(&mut ObjectWriter<'_>)) {
+        unsafe {
             let vtable_offset = builder.write_vtable(&self.vtable_buffer[..self.vtable_size]);
 
             builder.write_with(

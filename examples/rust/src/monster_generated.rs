@@ -755,53 +755,53 @@ mod root {
                     }
 
                     unsafe {
-                        table_writer.finish(builder, |object_writer| {
-                            if let ::core::option::Option::Some(prepared_pos) = prepared_pos {
+                        table_writer.finish_with_offset(builder, |object_writer| {
+                            if let ::core::option::Option::Some(prepared_pos) = &prepared_pos {
                                 object_writer.write::<_, _, 12>(&prepared_pos);
                             }
-                            if let ::core::option::Option::Some(prepared_name) = prepared_name {
+                            if let ::core::option::Option::Some(prepared_name) = &prepared_name {
                                 object_writer.write::<_, _, 4>(&prepared_name);
                             }
                             if let ::core::option::Option::Some(prepared_inventory) =
-                                prepared_inventory
+                                &prepared_inventory
                             {
                                 object_writer.write::<_, _, 4>(&prepared_inventory);
                             }
-                            if let ::core::option::Option::Some(prepared_weapons) = prepared_weapons
+                            if let ::core::option::Option::Some(prepared_weapons) =
+                                &prepared_weapons
                             {
                                 object_writer.write::<_, _, 4>(&prepared_weapons);
                             }
                             if let ::core::option::Option::Some(prepared_equipped) =
-                                prepared_equipped
+                                &prepared_equipped
                             {
                                 object_writer.write::<_, _, 4>(&prepared_equipped.offset());
                             }
-                            if let ::core::option::Option::Some(prepared_drops) = prepared_drops {
+                            if let ::core::option::Option::Some(prepared_drops) = &prepared_drops {
                                 object_writer.write::<_, _, 4>(&prepared_drops.tags_offset());
                             }
-                            if let ::core::option::Option::Some(prepared_drops) = prepared_drops {
+                            if let ::core::option::Option::Some(prepared_drops) = &prepared_drops {
                                 object_writer.write::<_, _, 4>(&prepared_drops.values_offset());
                             }
-                            if let ::core::option::Option::Some(prepared_path) = prepared_path {
+                            if let ::core::option::Option::Some(prepared_path) = &prepared_path {
                                 object_writer.write::<_, _, 4>(&prepared_path);
                             }
-                            if let ::core::option::Option::Some(prepared_mana) = prepared_mana {
+                            if let ::core::option::Option::Some(prepared_mana) = &prepared_mana {
                                 object_writer.write::<_, _, 2>(&prepared_mana);
                             }
-                            if let ::core::option::Option::Some(prepared_hp) = prepared_hp {
+                            if let ::core::option::Option::Some(prepared_hp) = &prepared_hp {
                                 object_writer.write::<_, _, 2>(&prepared_hp);
                             }
-                            if let ::core::option::Option::Some(prepared_color) = prepared_color {
+                            if let ::core::option::Option::Some(prepared_color) = &prepared_color {
                                 object_writer.write::<_, _, 1>(&prepared_color);
                             }
                             if let ::core::option::Option::Some(prepared_equipped) =
-                                prepared_equipped
+                                &prepared_equipped
                             {
                                 object_writer.write::<_, _, 1>(&prepared_equipped.tag());
                             }
-                        });
+                        })
                     }
-                    builder.current_offset()
                 }
             }
 
@@ -1443,16 +1443,16 @@ mod root {
                     }
 
                     unsafe {
-                        table_writer.finish(builder, |object_writer| {
-                            if let ::core::option::Option::Some(prepared_name) = prepared_name {
+                        table_writer.finish_with_offset(builder, |object_writer| {
+                            if let ::core::option::Option::Some(prepared_name) = &prepared_name {
                                 object_writer.write::<_, _, 4>(&prepared_name);
                             }
-                            if let ::core::option::Option::Some(prepared_damage) = prepared_damage {
+                            if let ::core::option::Option::Some(prepared_damage) = &prepared_damage
+                            {
                                 object_writer.write::<_, _, 2>(&prepared_damage);
                             }
-                        });
+                        })
                     }
-                    builder.current_offset()
                 }
             }
 
@@ -1757,16 +1757,15 @@ mod root {
                     }
 
                     unsafe {
-                        table_writer.finish(builder, |object_writer| {
-                            if let ::core::option::Option::Some(prepared_name) = prepared_name {
+                        table_writer.finish_with_offset(builder, |object_writer| {
+                            if let ::core::option::Option::Some(prepared_name) = &prepared_name {
                                 object_writer.write::<_, _, 4>(&prepared_name);
                             }
-                            if let ::core::option::Option::Some(prepared_armor) = prepared_armor {
+                            if let ::core::option::Option::Some(prepared_armor) = &prepared_armor {
                                 object_writer.write::<_, _, 2>(&prepared_armor);
                             }
-                        });
+                        })
                     }
-                    builder.current_offset()
                 }
             }
 

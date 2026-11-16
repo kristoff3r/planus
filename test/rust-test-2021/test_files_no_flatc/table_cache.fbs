@@ -1,0 +1,20 @@
+struct Point {
+  x: float;
+  y: float;
+}
+
+table Leaf {
+  value: uint32;
+  weight: float;
+  pos: Point;
+}
+
+table Branch {
+  leaves: [Leaf];
+  first: Leaf;
+}
+
+table Root {
+  branches: [Branch];
+  leaf: Leaf;
+}

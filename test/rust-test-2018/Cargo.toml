@@ -8,11 +8,12 @@ edition = "2018"
 rust-version = "1.88"
 
 [features]
-default = ["std", "vtable-cache", "string-cache", "bytes-cache"]
+default = ["std", "vtable-cache", "string-cache", "bytes-cache", "table-cache"]
 std = ["planus/std", "serde/std"]
 vtable-cache = ["planus/vtable-cache"]
 string-cache = ["planus/string-cache"]
 bytes-cache = ["planus/bytes-cache"]
+table-cache = ["planus/table-cache"]
 
 [dependencies]
 color-eyre.workspace = true

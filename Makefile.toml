@@ -134,7 +134,7 @@ script = '''
     for dir in test/rust-test-*; do
         pushd $dir
         for std in "" "std"; do
-            for cache in "" "vtable-cache string-cache bytes-cache"; do
+            for cache in "" "vtable-cache string-cache bytes-cache table-cache"; do
                 cargo test --no-default-features --features "${std} ${cache}"
             done
         done

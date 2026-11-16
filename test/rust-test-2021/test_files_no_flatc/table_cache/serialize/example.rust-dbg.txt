@@ -1,0 +1,206 @@
+RootRef {
+    branches: Ok(
+        [
+            Ok(
+                BranchRef {
+                    leaves: Ok(
+                        [
+                            Ok(
+                                LeafRef {
+                                    value: Ok(
+                                        1,
+                                    ),
+                                    weight: Ok(
+                                        0.0,
+                                    ),
+                                    pos: Ok(
+                                        PointRef {
+                                            x: 1.0,
+                                            y: 2.0,
+                                        },
+                                    ),
+                                },
+                            ),
+                            Ok(
+                                LeafRef {
+                                    value: Ok(
+                                        1,
+                                    ),
+                                    weight: Ok(
+                                        0.5,
+                                    ),
+                                    pos: Ok(
+                                        PointRef {
+                                            x: 1.0,
+                                            y: 2.0,
+                                        },
+                                    ),
+                                },
+                            ),
+                            Ok(
+                                LeafRef {
+                                    value: Ok(
+                                        1,
+                                    ),
+                                    weight: Ok(
+                                        0.0,
+                                    ),
+                                    pos: Ok(
+                                        PointRef {
+                                            x: 1.0,
+                                            y: 2.0,
+                                        },
+                                    ),
+                                },
+                            ),
+                        ],
+                    ),
+                    first: Ok(
+                        LeafRef {
+                            value: Ok(
+                                1,
+                            ),
+                            weight: Ok(
+                                0.0,
+                            ),
+                            pos: Ok(
+                                PointRef {
+                                    x: 1.0,
+                                    y: 2.0,
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+            Ok(
+                BranchRef {
+                    leaves: Ok(
+                        [
+                            Ok(
+                                LeafRef {
+                                    value: Ok(
+                                        1,
+                                    ),
+                                    weight: Ok(
+                                        0.0,
+                                    ),
+                                    pos: Ok(
+                                        PointRef {
+                                            x: 1.0,
+                                            y: 2.0,
+                                        },
+                                    ),
+                                },
+                            ),
+                            Ok(
+                                LeafRef {
+                                    value: Ok(
+                                        1,
+                                    ),
+                                    weight: Ok(
+                                        0.5,
+                                    ),
+                                    pos: Ok(
+                                        PointRef {
+                                            x: 1.0,
+                                            y: 2.0,
+                                        },
+                                    ),
+                                },
+                            ),
+                            Ok(
+                                LeafRef {
+                                    value: Ok(
+                                        1,
+                                    ),
+                                    weight: Ok(
+                                        0.0,
+                                    ),
+                                    pos: Ok(
+                                        PointRef {
+                                            x: 1.0,
+                                            y: 2.0,
+                                        },
+                                    ),
+                                },
+                            ),
+                        ],
+                    ),
+                    first: Ok(
+                        LeafRef {
+                            value: Ok(
+                                1,
+                            ),
+                            weight: Ok(
+                                0.0,
+                            ),
+                            pos: Ok(
+                                PointRef {
+                                    x: 1.0,
+                                    y: 2.0,
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+            Ok(
+                BranchRef {
+                    leaves: Ok(
+                        [],
+                    ),
+                    first: Ok(
+                        LeafRef {
+                            value: Ok(
+                                2,
+                            ),
+                            weight: Ok(
+                                0.0,
+                            ),
+                        },
+                    ),
+                },
+            ),
+            Ok(
+                BranchRef {
+                    leaves: Ok(
+                        [],
+                    ),
+                    first: Ok(
+                        LeafRef {
+                            value: Ok(
+                                2,
+                            ),
+                            weight: Ok(
+                                0.0,
+                            ),
+                            pos: Ok(
+                                PointRef {
+                                    x: 0.0,
+                                    y: 0.0,
+                                },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        ],
+    ),
+    leaf: Ok(
+        LeafRef {
+            value: Ok(
+                1,
+            ),
+            weight: Ok(
+                0.0,
+            ),
+            pos: Ok(
+                PointRef {
+                    x: 1.0,
+                    y: 2.0,
+                },
+            ),
+        },
+    ),
+}

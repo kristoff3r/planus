@@ -7,6 +7,7 @@ use crate::{Cursor, Offset, builder::Builder, traits::*};
 unsafe impl<T: ?Sized> Primitive for Offset<T> {
     const ALIGNMENT: usize = 4;
     const SIZE: usize = 4;
+    const IS_OFFSET: bool = true;
 }
 
 impl<T: ?Sized> WriteAsPrimitive<Offset<T>> for Offset<T> {

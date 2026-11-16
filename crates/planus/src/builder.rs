@@ -30,6 +30,9 @@ pub struct Builder {
     #[cfg(feature = "bytes-cache")]
     pub(crate) bytes_cache: crate::builder_cache::Cache<crate::builder_cache::ByteVec>,
 
+    #[cfg(feature = "table-cache")]
+    pub(crate) table_cache: Option<alloc::boxed::Box<crate::table_cache::TableCache>>,
+
     // This is a bit complicated. The buffer has support for guaranteeing a
     // specific write gets a specific alignment. It has many writes and thus
     // many promises, so how does keep track of this this across those promises, even
@@ -104,6 +107,9 @@ impl Builder {
             #[cfg(feature = "bytes-cache")]
             bytes_cache: crate::builder_cache::Cache::default(),
 
+            #[cfg(feature = "table-cache")]
+            table_cache: None,
+
             #[cfg(debug_assertions)]
             missing_bytes: 0,
         }
@@ -127,6 +133,54 @@ impl Builder {
         v.prepare(self)
     }
 
+    /// Enables or disables deduplication of tables and of vectors of offsets.
+    ///
+    /// While enabled, writing a table whose fields are equal to those of a
+    /// table already written to this builder returns the offset of the earlier
+    /// table instead of writing it again. Scalars, enums and floats compare by
+    /// their bit patterns (so `0.0` and `-0.0` differ, and a NaN equals a NaN
+    /// with the same bits), structs by their bytes, and fields referring to
+    /// other tables, strings or vectors by the position they refer to. A field
+    /// left out of the table differs from one set to its default value.
+    /// Deduplication composes: once equal children share an offset, so do
+    /// equal parents. Vectors whose elements are offsets, such as vectors of
+    /// tables or strings, are deduplicated the same way.
+    ///
+    /// The result is a valid flatbuffer that decodes to the same values. It is
+    /// smaller when subtrees repeat, at the cost of hashing every table and
+    /// vector of offsets and of keeping a copy of the fields of each distinct
+    /// one until the builder is cleared or dropped.
+    ///
+    /// The cache only knows values written while it is enabled. Disabling it
+    /// drops its contents, and [`clear`](Self::clear) empties it but keeps it
+    /// enabled.
+    ///
+    /// # Examples
+    /// ```
+    /// use planus::Builder;
+    /// use planus_example::monster_generated::my_game::sample::Weapon;
+    /// let mut builder = Builder::new();
+    /// builder.set_table_cache(true);
+    /// let first = Weapon::create(&mut builder, "Axe", 24);
+    /// let second = Weapon::create(&mut builder, "Axe", 24);
+    /// assert_eq!(first, second);
+    /// ```
+    #[cfg(feature = "table-cache")]
+    pub fn set_table_cache(&mut self, enabled: bool) {
+        if !enabled {
+            self.table_cache = None;
+        } else if self.table_cache.is_none() {
+            self.table_cache = Some(alloc::boxed::Box::default());
+        }
+    }
+
+    /// Returns whether tables and vectors of offsets are deduplicated, see
+    /// [`set_table_cache`](Self::set_table_cache).
+    #[cfg(feature = "table-cache")]
+    pub fn table_cache_enabled(&self) -> bool {
+        self.table_cache.is_some()
+    }
+
     /// Resets the builders internal state and clears the internal buffer.
     pub fn clear(&mut self) {
         self.inner.clear();
@@ -136,6 +190,10 @@ impl Builder {
         self.string_cache.clear();
         #[cfg(feature = "bytes-cache")]
         self.bytes_cache.clear();
+        #[cfg(feature = "table-cache")]
+        if let Some(table_cache) = &mut self.table_cache {
+            table_cache.clear();
+        }
         self.delayed_bytes = 0;
         self.alignment_mask = 0;
         #[cfg(debug_assertions)]

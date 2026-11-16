@@ -11,10 +11,11 @@ rust-version.workspace = true
 description = "Planus is an alternative compiler for flatbuffers, an efficient cross platform serialization library."
 
 [features]
-default = ["std", "vtable-cache", "string-cache", "bytes-cache"]
+default = ["std", "vtable-cache", "string-cache", "bytes-cache", "table-cache"]
 std = []
 extra-validation = []
 bytes-cache = ["hashbrown"]
+table-cache = ["hashbrown"]
 string-cache = ["hashbrown"]
 vtable-cache = ["hashbrown"]
 

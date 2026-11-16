@@ -16,23 +16,31 @@ where
         //       https://github.com/rust-lang/rust/issues/80908
         let tmp =
             unsafe { (&tmp as *const [MaybeUninit<T::Value>; N] as *const [T::Value; N]).read() };
-        unsafe {
-            builder.write_with(
-                4 + T::STRIDE.checked_mul(self.len()).unwrap(),
-                P::ALIGNMENT_MASK.max(3),
-                |buffer_position, bytes| {
-                    let bytes = bytes.as_mut_ptr();
+        let alignment_mask = P::ALIGNMENT_MASK.max(3);
+        let write = |builder: &mut Builder| {
+            unsafe {
+                builder.write_with(
+                    4 + T::STRIDE.checked_mul(self.len()).unwrap(),
+                    alignment_mask,
+                    |buffer_position, bytes| {
+                        let bytes = bytes.as_mut_ptr();
 
-                    (self.len() as u32).write(
-                        Cursor::new(&mut *(bytes as *mut [MaybeUninit<u8>; 4])),
-                        buffer_position,
-                    );
+                        (self.len() as u32).write(
+                            Cursor::new(&mut *(bytes as *mut [MaybeUninit<u8>; 4])),
+                            buffer_position,
+                        );
 
-                    T::write_values(&tmp, bytes.add(4), buffer_position - 4);
-                },
-            )
+                        T::write_values(&tmp, bytes.add(4), buffer_position - 4);
+                    },
+                )
+            };
+            builder.current_offset()
         };
-        builder.current_offset()
+
+        #[cfg(feature = "table-cache")]
+        return crate::table_cache::dedup_vector::<T, P>(builder, &tmp, alignment_mask, write);
+        #[cfg(not(feature = "table-cache"))]
+        write(builder)
     }
 }
 

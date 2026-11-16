@@ -1,0 +1,29 @@
+{
+  "branches": [
+    {
+      "leaves": [
+        { "value": 1, "weight": 0.0, "pos": { "x": 1.0, "y": 2.0 } },
+        { "value": 1, "weight": 0.5, "pos": { "x": 1.0, "y": 2.0 } },
+        { "value": 1, "weight": 0.0, "pos": { "x": 1.0, "y": 2.0 } }
+      ],
+      "first": { "value": 1, "weight": 0.0, "pos": { "x": 1.0, "y": 2.0 } }
+    },
+    {
+      "leaves": [
+        { "value": 1, "weight": 0.0, "pos": { "x": 1.0, "y": 2.0 } },
+        { "value": 1, "weight": 0.5, "pos": { "x": 1.0, "y": 2.0 } },
+        { "value": 1, "weight": 0.0, "pos": { "x": 1.0, "y": 2.0 } }
+      ],
+      "first": { "value": 1, "weight": 0.0, "pos": { "x": 1.0, "y": 2.0 } }
+    },
+    {
+      "leaves": [],
+      "first": { "value": 2, "weight": 0.0, "pos": null }
+    },
+    {
+      "leaves": [],
+      "first": { "value": 2, "weight": 0.0, "pos": { "x": 0.0, "y": 0.0 } }
+    }
+  ],
+  "leaf": { "value": 1, "weight": 0.0, "pos": { "x": 1.0, "y": 2.0 } }
+}

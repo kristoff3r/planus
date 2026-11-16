@@ -20,6 +20,8 @@ pub mod vectors;
     feature = "bytes-cache"
 ))]
 mod builder_cache;
+#[cfg(feature = "table-cache")]
+mod table_cache;
 
 #[doc(hidden)]
 pub extern crate alloc;

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `--ignore-unknown-metadata` to allow generating code from schemas that include generator-specific attributes.
 - Allow keywords as identifiers like flatc [#313](https://github.com/planus-org/planus/pull/313)
 - Implement `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash` and `Debug` for `Offset<T>`, `UnionOffset<T>` and `UnionVectorOffset<T>`, comparing by position in the buffer, so offsets can be used as map keys.
+- Add an opt-in table cache that deduplicates tables and vectors of offsets: with `Builder::set_table_cache(true)`, writing a table or vector equal to one written earlier returns the earlier offset instead. Fields compare by bit pattern and child offsets by the position they point at. The `table-cache` cargo feature is on by default; the cache itself is off until enabled. Generated table code now calls `TableWriter::finish_with_offset`, so schemas must be regenerated for the cache to apply to them.
 
 ### Fixed
 - Fixed rustfmt error handling. Don't return error if rustfmt succeed but prints to stderr, just print out stderr instead. [#363](https://github.com/planus-org/planus/pull/363) [#373](https://github.com/planus-org/planus/pull/373)
